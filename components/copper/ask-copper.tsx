@@ -545,6 +545,9 @@ function sentRows(name: string, input: unknown): Row[] | string {
       ["Years", String(value.years ?? "")],
     ];
   }
+  if (name === "compare_billing") {
+    return [["Years", String(value.years ?? "")]];
+  }
   if (name === "check_availability") {
     return [
       ["Product", productName(value.product)],
@@ -629,6 +632,13 @@ type ProductsOutput = {
 type PricesOutput = {
   products: { id: string; name: string; priceUsd: number }[];
   plans: { id: string; name: string; monthlyUsd: number; annualUsd: number }[];
+};
+type BillingOutput = {
+  years: number;
+  monthly: { perMonthUsd: number; totalUsd: number };
+  annual: { perYearUsd: number; totalUsd: number };
+  cheaper: "monthly" | "annual" | "same";
+  savingsUsd: number;
 };
 type AvailabilityOutput =
   | {
@@ -724,6 +734,47 @@ function ToolOutput({ name, output }: { name: string; output: unknown }) {
               </span>
             </div>
           ))}
+      </div>
+    );
+  }
+
+  if (
+    name === "compare_billing" &&
+    isObject(output) &&
+    isObject(output.monthly)
+  ) {
+    const billing = output as BillingOutput;
+    const years = billing.years === 1 ? "1 year" : `${billing.years} years`;
+    return (
+      <div className="text-sm">
+        <div className="flex justify-between gap-4 py-0.5">
+          <span>
+            Monthly ({formatUsd(billing.monthly.perMonthUsd)}/mo), {years}
+          </span>
+          <span className="font-medium tabular-nums">
+            {formatUsd(billing.monthly.totalUsd)}
+          </span>
+        </div>
+        <div className="flex justify-between gap-4 py-0.5">
+          <span>
+            Yearly ({formatUsd(billing.annual.perYearUsd)}/yr), {years}
+          </span>
+          <span className="font-medium tabular-nums">
+            {formatUsd(billing.annual.totalUsd)}
+          </span>
+        </div>
+        <div className="mt-1.5 flex items-baseline justify-between gap-4 border-t pt-1.5">
+          <span className="font-semibold">
+            {billing.cheaper === "same"
+              ? "Same price either way"
+              : `${billing.cheaper === "annual" ? "Yearly" : "Monthly"} saves`}
+          </span>
+          {billing.cheaper !== "same" && (
+            <span className="text-primary text-xl font-bold tabular-nums">
+              {formatUsd(billing.savingsUsd)}
+            </span>
+          )}
+        </div>
       </div>
     );
   }

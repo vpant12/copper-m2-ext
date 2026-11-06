@@ -74,6 +74,7 @@ calls, results) as the answer streams in.
 | Components | `components/copper/ask-copper.tsx`, `site-header.tsx` | Launcher, side sheet, Use tools switch, the rail of stations and tool cards; header link to `#ask` |
 | Server Action | `lib/copper/assistant/ask.ts` | `askCopper({ messages, useTools })` returns a live `Progress` and reads `fullStream` in the background |
 | Tools | `lib/copper/assistant/tools.ts` | `get_products`, `get_prices`, `calculate_cost`, `check_availability`; prices from the catalog, stock from `readInventory()` on every call |
+| Extension tool | `lib/copper/assistant/tools.ts` (`extensionTools`) | `compare_billing`: Copper Plus monthly vs. yearly over 1 to 5 years, from catalog prices. Sent with the four spec tools, so this repo fails AC-M2.14 (exactly four tools) by design |
 | Instructions | `lib/copper/assistant/instructions.ts` | `COPPER_INSTRUCTIONS`, sent only when tools are on |
 | AI calls | `lib/ai/call.ts` (`callStream`, module 2, feature `ask-copper`) | Default Gemini model, up to 5 steps, with thought summaries. One `[ai_calls]` row per question |
 

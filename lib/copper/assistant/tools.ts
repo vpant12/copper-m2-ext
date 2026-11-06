@@ -216,6 +216,66 @@ export async function checkAvailability(
   };
 }
 
+// Extension (not part of the Module 2 spec): a fifth tool that compares paying
+// for Copper Plus monthly with paying yearly.
+
+export type CompareBillingInput = { years: number };
+
+export type BillingComparison = {
+  plan: string;
+  years: number;
+  monthly: { perMonthUsd: number; totalUsd: number };
+  annual: { perYearUsd: number; totalUsd: number };
+  cheaper: "monthly" | "annual" | "same";
+  savingsUsd: number;
+  savingsPercent: number;
+};
+
+export const compareBillingInput: z.ZodType<CompareBillingInput> = z.object({
+  years: z
+    .number()
+    .int()
+    .min(1)
+    .max(5)
+    .describe("How many years to compare, a whole number from 1 to 5."),
+});
+
+/** compare_billing: Copper Plus paid monthly vs. yearly over some years. */
+export function compareBilling(input: CompareBillingInput): BillingComparison {
+  const plan = getPlans().find((p) => p.id === "copper-plus");
+  if (!plan) throw new Error("Copper Plus isn't in the catalog");
+
+  const monthlyTotal = toCents(plan.monthlyUsd * 12 * input.years);
+  const annualTotal = toCents(plan.annualUsd * input.years);
+  const savingsUsd = toCents(Math.abs(monthlyTotal - annualTotal));
+  const higher = Math.max(monthlyTotal, annualTotal);
+
+  return {
+    plan: plan.name,
+    years: input.years,
+    monthly: { perMonthUsd: plan.monthlyUsd, totalUsd: monthlyTotal },
+    annual: { perYearUsd: plan.annualUsd, totalUsd: annualTotal },
+    cheaper:
+      annualTotal < monthlyTotal
+        ? "annual"
+        : monthlyTotal < annualTotal
+          ? "monthly"
+          : "same",
+    savingsUsd,
+    savingsPercent: higher > 0 ? Math.round((savingsUsd / higher) * 100) : 0,
+  };
+}
+
+/** Tools added beyond the spec's four. Kept apart so copperTools stays the spec's set. */
+export const extensionTools = {
+  compare_billing: tool({
+    description:
+      "Compares paying for Copper Plus monthly with paying yearly over 1 to 5 years, and says which is cheaper and by how much.",
+    inputSchema: compareBillingInput,
+    execute: async (input) => compareBilling(input),
+  }),
+} satisfies ToolSet;
+
 export const copperTools = {
   get_products: tool({
     description:
